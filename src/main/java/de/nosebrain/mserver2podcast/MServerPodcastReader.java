@@ -35,33 +35,10 @@ public class MServerPodcastReader {
 	@Value("${mserver.basePath}")
 	private String basePath;
 
-	public static void main(String[] args) throws Exception {
-		MServerPodcastReader re = new MServerPodcastReader();
-		re.setBasePath("/Users/nosebrain/.mserver/filmlisten");
-		final List<Video> videos = re.get("Frontal 21");
-
-		for (final Video video : videos) {
-			System.out.print(video.getName() + " => " + video.getUrl());
-		}
-	}
-
 	public List<Video> get(final String topic) throws IOException, URISyntaxException {
 		final List<Video> videos = new LinkedList<>();
 
-		final File rootFolder = new File(this.basePath);
-
-		final File[] files = rootFolder.listFiles(((dir, name) -> name.endsWith(FILE_SUFFIX)));
-
-		final SortedSet<LocalDateTime> timestamps = new TreeSet<>();
-
-		for (final File videoFile : files) {
-			final String name = videoFile.getName().replaceFirst(FILE_SUFFIX, "");
-
-			final LocalDateTime dateTime = LocalDateTime.parse(name, FORMATTER);
-			timestamps.add(dateTime);
-		}
-
-		final File fileToUse = new File(rootFolder, FORMATTER.format(timestamps.last()) + FILE_SUFFIX);
+		final File fileToUse = this.getLatestFile();
 
 
 		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileToUse), "UTF-8"))) {
@@ -99,6 +76,22 @@ public class MServerPodcastReader {
 
 
 		return videos;
+	}
+
+	private File getLatestFile() {
+		final File rootFolder = new File(this.basePath);
+		final File[] files = rootFolder.listFiles(((dir, name) -> name.endsWith(FILE_SUFFIX)));
+
+		// get the latest file
+		final SortedSet<LocalDateTime> timestamps = new TreeSet<>();
+		for (final File videoFile : files) {
+			final String name = videoFile.getName().replaceFirst(FILE_SUFFIX, "");
+
+			final LocalDateTime dateTime = LocalDateTime.parse(name, FORMATTER);
+			timestamps.add(dateTime);
+		}
+
+		return new File(rootFolder, FORMATTER.format(timestamps.last()) + FILE_SUFFIX);
 	}
 
 	public void setBasePath(String basePath) {
