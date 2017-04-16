@@ -40,7 +40,6 @@ public class MServerPodcastReader {
 
 		final File fileToUse = this.getLatestFile();
 
-
 		try (final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileToUse), "UTF-8"))) {
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -70,10 +69,8 @@ public class MServerPodcastReader {
 					video.setUrl(uri);
 					videos.add(video);
 				}
-
 			}
 		}
-
 
 		return videos;
 	}
