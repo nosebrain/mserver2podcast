@@ -107,7 +107,7 @@
                 <version>2.1</version>
                 <configuration>
                     <server>prod</server>
-                    <url>http://188.68.54.175:8080/manager/text</url>
+                    <url>http://nosebrain.de:8080/manager/text</url>
                 </configuration>
             </plugin>
         </plugins>
