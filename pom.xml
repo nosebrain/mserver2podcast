@@ -12,7 +12,10 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
+    <scm>
+      <connection>scm:hg:ssh://hg@bitbucket.org/nosebrain/mserver2podcast</connection>
+      <developerConnection>scm:hg:ssh://hg@bitbucket.org/nosebrain/mserver2podcast</developerConnection>
+    </scm>
     <dependencies>
         <!-- logging -->
         <dependency>
