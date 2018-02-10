@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.LinkedList;
@@ -26,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * @author dzo
@@ -40,11 +42,11 @@ public class BaseController {
 	private String projectHome;
 
 	@RequestMapping("/{topic}")
-	public void topicPodcast(final @PathVariable("topic") String topic, final HttpServletResponse response) throws IOException, URISyntaxException, FeedException {
+	public void topicPodcast(final @PathVariable("topic") String topic, @RequestParam(value="filter", required=false) final String filter, final HttpServletResponse response) throws IOException, FeedException {
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("application/xml");
 
-		final List<Video> videos = this.podcastReader.get(topic);
+		final List<Video> videos = this.podcastReader.get(topic, filter);
 
 		final SyndFeed feed = new SyndFeedImpl();
 		feed.setTitle(topic);
@@ -63,7 +65,11 @@ public class BaseController {
 			description.setType("text/plain");
 			description.setValue(video.getDescription());
 			entry.setDescription(description);
-			entry.setPublishedDate(Date.from(video.getDateTime().toInstant(ZoneOffset.UTC)));
+      final LocalDateTime dateTime = video.getDateTime();
+      if (dateTime != null) {
+        entry.setPublishedDate(Date.from(dateTime.toInstant(ZoneOffset.UTC)));
+      }
+
 			final List<SyndEnclosure> enclosures = new LinkedList<>();
 
 			final SyndEnclosure enclosure = new SyndEnclosureImpl();

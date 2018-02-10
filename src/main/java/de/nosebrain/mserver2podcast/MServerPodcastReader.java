@@ -9,7 +9,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
@@ -18,9 +17,6 @@ import java.util.regex.Pattern;
 
 import de.nosebrain.mserver2podcast.model.Entry;
 import de.nosebrain.mserver2podcast.model.Video;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -38,113 +34,120 @@ public class MServerPodcastReader {
 	@Value("${mserver.basePath}")
 	private String basePath;
 
-	public List<Video> get(final String topic) throws IOException, URISyntaxException {
+	public List<Video> get(final String topic, final String filter) throws IOException {
 		final List<Video> videos = new LinkedList<>();
 
 		final File fileToUse = this.getLatestFile();
+		final MServerParser parser = new MServerParser(fileToUse);
 
-		final Iterator<Entry> entryIterator = new MserverIterator(fileToUse);
+		final List<Entry> entries = parser.parse(topic, filter);
 
-		while (entryIterator.hasNext()) {
-      final Entry entry = entryIterator.next();
-      if (entry.getTopic().equals(topic)) {
-        videos.add(entry.getVideo());
-      }
+		for (final Entry entry : entries) {
+		  videos.add(entry.getVideo());
     }
 
 		return videos;
 	}
 
-	private class MserverIterator implements Iterator<Entry> {
+  private class MServerParser {
 	  private static final String BEGINNING = "\"X\":[";
+	  private static final int INDEX_TOPIC = 1;
+    private static final int INDEX_NAME = 2;
 
-	  private int currentIndex = 0;
-    private Entry lastEntry = new Entry();
-	  private final List<String> lines = new LinkedList<>();
+	  private final File file;
 
-	  public MserverIterator(final File file) throws IOException {
+	  public MServerParser(final File file) {
+	    this.file = file;
+    }
+
+    public List<Entry> parse(final String topic, final String filter) throws IOException {
+	    final List<Entry> entries = new LinkedList<>();
+	    final List<String> lines = new LinkedList<>();
       try (final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
         String line;
         while ((line = reader.readLine()) != null) {
-          this.lines.add(line);
+          lines.add(line);
         }
       }
 
-      if (this.lines.size() == 1) {
-        // get the only line and split it in entries
-        final String allLines = this.lines.get(0);
-        this.lines.remove(0);
+      if (lines.size() == 1) {
+        // get the single line and split it in entries
+        final String[] split = lines.get(0).split(Pattern.quote(BEGINNING));
 
-        final String[] split = allLines.split(Pattern.quote(BEGINNING));
+        String currentTopic = "";
+        String currentChannel = "";
 
-        for (String line : split) {
-          this.lines.add(line);
+        for (final String line : split) {
+          final String infoStr = line.substring(1, line.length() - 2); // remove '],'
+          final String[] values = infoStr.split("\",\"");
+          final String lineTopic = values[INDEX_TOPIC];
+          final String lineChannel = values[0];
+          if (!lineTopic.isEmpty()) {
+            currentTopic = lineTopic;
+          }
+
+          if (!lineChannel.isEmpty()) {
+            currentChannel = lineChannel;
+          }
+
+          values[INDEX_TOPIC] = currentTopic;
+          values[0] = currentChannel;
+
+          if (matches(values, topic, filter)) {
+            final String name = values[INDEX_NAME];
+
+            final Entry entry = new Entry();
+
+            final Video video = new Video();
+            video.setName(name);
+
+            final String dateString = values[3];
+            final String timeString = values[4];
+
+            if (!dateString.isEmpty() && !timeString.isEmpty()) {
+              final String dateTimeString = dateString + " " + timeString;
+              final LocalDateTime published = LocalDateTime.parse(dateTimeString, VIDEO_FORMATTER);
+              video.setDateTime(published);
+            }
+
+            final String description = values[7];
+            video.setDescription(description);
+
+            final String url = values[8];
+            try {
+              final URI uri = new URI(url);
+              video.setUrl(uri);
+            } catch (final URISyntaxException e) {
+              // ignore
+            }
+
+            entry.setChannel(currentChannel);
+            entry.setTopic(currentTopic);
+            entry.setVideo(video);
+            entries.add(entry);
+          }
         }
       }
 
-      this.lines.remove(0);
+      return entries;
     }
 
-    @Override
-    public boolean hasNext() {
-      return this.currentIndex < this.lines.size();
-    }
-
-    @Override
-    public Entry next() {
-      final String line = BEGINNING + this.lines.get(this.currentIndex++);
-      final Entry entry = new Entry();
-
-      final JSONTokener tokener = new JSONTokener("{" + line + "}");
-      final JSONObject root = new JSONObject(tokener);
-      final JSONArray infoArray = root.getJSONArray("X");
-
-      final Video video = new Video();
-      final String name = infoArray.getString(2);
-      video.setName(name);
-
-      final String dateString = infoArray.getString(3);
-      final String timeString = infoArray.getString(4);
-
-      if (!dateString.isEmpty() && !timeString.isEmpty()) {
-        final String dateTimeString = dateString + " " + timeString;
-        final LocalDateTime published = LocalDateTime.parse(dateTimeString, VIDEO_FORMATTER);
-        video.setDateTime(published);
+    private boolean matches(String[] values, String topic, String filter) {
+	    if (!topic.equals(values[INDEX_TOPIC])) {
+	      return false;
       }
 
-      final String description = infoArray.getString(7);
-      video.setDescription(description);
-
-      final String url = infoArray.getString(8);
-      try {
-        final URI uri = new URI(url);
-        video.setUrl(uri);
-      } catch (final URISyntaxException e) {
-        // ignore
+      if (filter != null) {
+	      if (!values[INDEX_NAME].contains(filter)) {
+	        return false;
+        }
       }
 
-      final String channel = getInfo(infoArray,0, this.lastEntry.getChannel());
-      final String topic = getInfo(infoArray,1, this.lastEntry.getTopic());
-      entry.setChannel(channel);
-      entry.setTopic(topic);
-      entry.setVideo(video);
-
-      this.lastEntry = entry;
-
-      return entry;
-    }
-
-    private String getInfo(JSONArray infoArray, int index, String defaultValue) {
-      final String info = infoArray.getString(index).trim();
-      if (info.isEmpty()) {
-        return defaultValue;
-      }
-
-      return info;
+      return true;
     }
   }
 
-	private File getLatestFile() {
+  private File getLatestFile() {
 		final File rootFolder = new File(this.basePath);
 		final File[] files = rootFolder.listFiles(((dir, name) -> name.endsWith(FILE_SUFFIX)));
 
