@@ -1,6 +1,6 @@
 # MServer 2 Podcast
 
-This project provides a service which generates a feed for Podcast apps (e. g. iTunes) from crawled meta data by [MServer](https://github.com/mediathekview/MServer).
+This project provides a service which generates a feed for Podcast apps (e.g. iTunes) from crawled meta data by [MServer](https://github.com/mediathekview/MServer).
 
 ## Usage
 
@@ -8,7 +8,7 @@ Subscribe to `http://localhost:8080/mserver2podcast/TOPIC` (replace `localhost:8
 
 `TOPIC` is equal to the `Thema` you can select in the GUI `MediathekView`.
 
-e. g. for `Tatort`: `http://localhost:8080/mserver2podcast/Tatort`
+e.g. for `Tatort`: `http://localhost:8080/mserver2podcast/Tatort`
 
 
 ## Setup MServer
