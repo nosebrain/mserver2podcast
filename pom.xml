@@ -11,8 +11,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <scm>
-      <connection>scm:hg:ssh://hg@bitbucket.org/nosebrain/mserver2podcast</connection>
-      <developerConnection>scm:hg:ssh://hg@bitbucket.org/nosebrain/mserver2podcast</developerConnection>
+      <connection>scm:git:ssh://git@github.com:nosebrain/mserver2podcast.git</connection>
+      <developerConnection>scm:git:ssh://git@github.com:nosebrain/mserver2podcast.git</developerConnection>
       <tag>HEAD</tag>
   </scm>
     <dependencies>
