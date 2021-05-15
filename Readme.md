@@ -15,7 +15,7 @@ e.g. for `Tatort`: `http://localhost:8080/mserver2podcast/Tatort`
 Download the movie/show list using the provided bash script in `misc/download.sh`. Copy the script and setup a cron job:
 
 ```
-4 4 * * * PATH_TO_SCRIPT/download.sh / PATH_FOLDER
+4 4 * * * PATH_TO_SCRIPT/download.sh PATH_FOLDER
 ```
 
 ## Setup Service
