@@ -4,7 +4,7 @@
 
     <groupId>de.nosebrain</groupId>
     <artifactId>mserver2podcast</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4-SNAPSHOT</version>
     <packaging>war</packaging>
 
     <properties>
@@ -13,7 +13,7 @@
     <scm>
       <connection>scm:git:ssh://git@github.com/nosebrain/mserver2podcast.git</connection>
       <developerConnection>scm:git:ssh://git@github.com/nosebrain/mserver2podcast.git</developerConnection>
-      <tag>v1.0.3</tag>
+      <tag>HEAD</tag>
   </scm>
     <dependencies>
         <!-- logging -->
