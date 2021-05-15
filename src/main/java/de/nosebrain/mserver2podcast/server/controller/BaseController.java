@@ -3,8 +3,8 @@ package de.nosebrain.mserver2podcast.server.controller;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.LinkedList;
@@ -42,11 +42,11 @@ public class BaseController {
 	private String projectHome;
 
 	@RequestMapping("/{topic}")
-	public void topicPodcast(final @PathVariable("topic") String topic, @RequestParam(value="filter", required=false) final String filter, final HttpServletResponse response) throws IOException, FeedException {
+	public void topicPodcast(final @PathVariable("topic") String topic, @RequestParam(value="filter", required=false) final String filter, @RequestParam(value="channel", required = false) final String channel, @RequestParam(value = "startTime", required = false) final LocalTime startTime, @RequestParam(value = "minLength", required = false) Integer minLength, final HttpServletResponse response) throws IOException, FeedException {
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("application/xml");
 
-		final List<Video> videos = this.podcastReader.get(topic, filter);
+		final List<Video> videos = this.podcastReader.get(topic, filter, channel, startTime, minLength);
 
 		final SyndFeed feed = new SyndFeedImpl();
 		feed.setTitle(topic);

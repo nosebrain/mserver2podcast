@@ -7,12 +7,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 import de.nosebrain.mserver2podcast.model.Entry;
@@ -26,22 +27,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class MServerPodcastReader {
 
-	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd__HH.mm.ss");
 	private static final DateTimeFormatter VIDEO_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
-	private static final String FILE_SUFFIX = "__filme.json";
+  @Value("${mserver.filePath}")
+	private String filePath;
 
-	@Value("${mserver.basePath}")
-	private String basePath;
-
-	public List<Video> get(final String topic, final String filter) throws IOException {
-		final List<Video> videos = new LinkedList<>();
-
-		final File fileToUse = this.getLatestFile();
+	public List<Video> get(final String topic, final String filter, final String channel, final LocalTime startTime, final Integer minLength) throws IOException {
+		final File fileToUse = new File(this.filePath);
 		final MServerParser parser = new MServerParser(fileToUse);
 
-		final List<Entry> entries = parser.parse(topic, filter);
+		final List<Entry> entries = parser.parse(topic, filter, channel, startTime, minLength);
 
+    final List<Video> videos = new LinkedList<>();
 		for (final Entry entry : entries) {
 		  videos.add(entry.getVideo());
     }
@@ -60,10 +57,10 @@ public class MServerPodcastReader {
 	    this.file = file;
     }
 
-    public List<Entry> parse(final String topic, final String filter) throws IOException {
+    public List<Entry> parse(final String topic, final String filter, final String channel, final LocalTime startTime, final Integer minLength) throws IOException {
 	    final List<Entry> entries = new LinkedList<>();
 	    final List<String> lines = new LinkedList<>();
-      try (final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
+      try (final BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
         String line;
         while ((line = reader.readLine()) != null) {
           lines.add(line);
@@ -90,8 +87,37 @@ public class MServerPodcastReader {
             currentChannel = lineChannel;
           }
 
+          if (channel != null && !currentChannel.equals(channel)) {
+            continue;
+          }
+
           values[INDEX_TOPIC] = currentTopic;
           values[0] = currentChannel;
+
+          final String startTimeStr = values[4];
+          if (!startTimeStr.isEmpty()) {
+            try {
+              final LocalTime indexStartTime = LocalTime.parse(startTimeStr);
+
+              if (startTime != null && !startTime.equals(indexStartTime)) {
+                continue;
+              }
+            } catch (final DateTimeParseException e) {
+              // ignore
+            }
+          }
+
+          final String lengthStr = values[5];
+          if (minLength != null && !lengthStr.isEmpty()) {
+            final String[] lengthValues = lengthStr.split(":");
+            final int hours = Integer.parseInt(lengthValues[0]);
+            final int minutes = Integer.parseInt(lengthValues[1]);
+
+            final int runtimeInMinutes = 60 * hours + minutes;
+            if (runtimeInMinutes < minLength) {
+              continue;
+            }
+          }
 
           if (matches(values, topic, filter)) {
             final String name = values[INDEX_NAME];
@@ -147,23 +173,10 @@ public class MServerPodcastReader {
     }
   }
 
-  private File getLatestFile() {
-		final File rootFolder = new File(this.basePath);
-		final File[] files = rootFolder.listFiles(((dir, name) -> name.endsWith(FILE_SUFFIX)));
-
-		// get the latest file
-		final SortedSet<LocalDateTime> timestamps = new TreeSet<>();
-		for (final File videoFile : files) {
-			final String name = videoFile.getName().replaceFirst(FILE_SUFFIX, "");
-
-			final LocalDateTime dateTime = LocalDateTime.parse(name, FORMATTER);
-			timestamps.add(dateTime);
-		}
-
-		return new File(rootFolder, FORMATTER.format(timestamps.last()) + FILE_SUFFIX);
-	}
-
-	public void setBasePath(String basePath) {
-		this.basePath = basePath;
-	}
+  /**
+   * @param filePath the filePath to set
+   */
+  public void setFilePath(String filePath) {
+    this.filePath = filePath;
+  }
 }

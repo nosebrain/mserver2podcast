@@ -13,10 +13,10 @@ public class MServerPodcastReaderTest {
   @Ignore
   public void testReader() throws IOException {
     final MServerPodcastReader reader = new MServerPodcastReader();
+    reader.setFilePath("/Users/nosebrain/Desktop/filmliste-act");
 
-    reader.setBasePath("/Users/nosebrain/Desktop");
+    final List<Video> videos = reader.get("frontal-21", null, null, null, null);
 
-    final List<Video> videos = reader.get("frontal-21", null);
-
+    videos.get(0);
   }
 }

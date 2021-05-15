@@ -10,13 +10,12 @@ Subscribe to `http://localhost:8080/mserver2podcast/TOPIC` (replace `localhost:8
 
 e.g. for `Tatort`: `http://localhost:8080/mserver2podcast/Tatort`
 
+## Download MServer files
 
-## Setup MServer
-
-Follow the instructions on [MServer](https://github.com/mediathekview/MServer). Add a cronjob to run MServer on a daily basis:
+Download the movie/show list using the provided bash script in `misc/download.sh`. Copy the script and setup a cron job:
 
 ```
-4 4 * * * cd /$PATH_TO_MSERVER/MServer && ./gradlew run
+4 4 * * * PATH_TO_SCRIPT/download.sh / PATH_FOLDER
 ```
 
 ## Setup Service
@@ -25,8 +24,8 @@ Build the service using Maven (`mvn clean install`). Deploy the war to Tomcat.
 
 ### Configuration
 
-Create a file `$CATALINA_HOME/conf/mserver2podcast-service/mserver2podcast-service.properties` and add the path pointing to the mserver cache to the properties file:
+Create a file `$CATALINA_HOME/conf/mserver2podcast-service/mserver2podcast-service.properties` and add the path pointing to the mserver file to the properties file:
 
 ```
-mserver.basePath = /$PATH_TO_USER_HOME_RUNNING_MSERVER/.mserver/filmlisten
+mserver.filePath = PATH_FOLDER/filmliste-act
 ```
